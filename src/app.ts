@@ -17,14 +17,12 @@ app.use('/customer', customerGetRouter);
 app.use('/customer', customerListRouter);
 app.use('/customer', customerUpdateRouter);
 
-setTimeout(() => {
-    const mongoConnection: MongoDb = MongoDb.getInstance();
-    const redisCache: RedisDb = RedisDb.getInstance();
-    const rabbitMq: RabbitMq = RabbitMq.getInstance();
-    mongoConnection.connect();
-    app.set('RabbitMq', rabbitMq);
-    app.set('redisCache', redisCache);
-}, 10000);
+const mongoConnection: MongoDb = MongoDb.getInstance();
+const redisCache: RedisDb = RedisDb.getInstance();
+const rabbitMq: RabbitMq = RabbitMq.getInstance();
+mongoConnection.connect();
+app.set('RabbitMq', rabbitMq);
+app.set('redisCache', redisCache);
 
 app.use(generalErrorMiddleware);
 export default app;

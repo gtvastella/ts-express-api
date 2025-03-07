@@ -13,13 +13,24 @@ export class MongoDb {
         return MongoDb.instance;
     }
     public async connect(): Promise<void> {
-        try {
-            const url = `mongodb://${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_COLLECTION}`;
-            this.connection = await mongoose.connect(url);
-            console.log('MongoDB connected');
-        } catch (error) {
-            console.error('MongoDB connection error', error);
-            throw new MongoException('Erro ao conectar com o MongoDB:', 500, error);
+        const maxRetries = 5;
+        const retryDelay = 15000;
+        let attempts = 0;
+
+        while (attempts < maxRetries) {
+            try {
+                const url = `mongodb://${process.env.MONGO_HOST}:${process.env.MONGO_PORT}/${process.env.MONGO_COLLECTION}`;
+                this.connection = await mongoose.connect(url);
+                console.log('MongoDB connected');
+                return;
+            } catch (error) {
+                attempts++;
+                console.error(`MongoDB connection attempt ${attempts} failed`, error);
+                if (attempts >= maxRetries) {
+                    throw new MongoException('Erro ao conectar com o MongoDB após várias tentativas:', 500, error);
+                }
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+            }
         }
     }
     public async disconnect(): Promise<void> {

@@ -23,20 +23,31 @@ export class RabbitMq {
     }
 
     public async connect(): Promise<void> {
-        try {
-            if (this.channelModel  && this.channel) {
-                console.log('RabbitMQ is already connected');
+        let attempts = 0;
+        const maxAttempts = 5;
+        const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+        while (attempts < maxAttempts) {
+            try {
+                if (this.channelModel && this.channel) {
+                    console.log('RabbitMQ is already connected');
+                    return;
+                }
+
+                this.channelModel = await client.connect(this.rabbitMqUrl);
+                this.channel = await this.channelModel.createChannel();
+                console.log('RabbitMQ connected');
+                await this.consume();
                 return;
+
+            } catch (error) {
+                attempts++;
+                console.error(`Error connecting to RabbitMQ (Attempt ${attempts} of ${maxAttempts})`, error);
+                if (attempts >= maxAttempts) {
+                    throw new RabbitMQException('Failed to connect to RabbitMQ after multiple attempts');
+                }
+                await delay(15000); 
             }
-
-            this.channelModel = await client.connect(this.rabbitMqUrl);
-            this.channel = await this.channelModel.createChannel();
-            console.log('RabbitMQ connected');  
-            await this.consume();
-
-        } catch (error) {
-            console.error('Error connecting to RabbitMQ', error);
-            throw new RabbitMQException('Failed to connect to RabbitMQ');
         }
     }
 

@@ -21,12 +21,23 @@ export class RedisDb {
     }
 
     public async connect(): Promise<void> {
-        try {
-            await this.client.connect();
-            console.log('Redis connected');
-        } catch (error) {
-            console.error('Redis connection error', error);
-            throw new RedisException('Erro ao conectar com o Redis:', 500, error);
+        let attempts = 0;
+        const maxAttempts = 5;
+        const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+        while (attempts < maxAttempts) {
+            try {
+                await this.client.connect();
+                console.log('Redis connected');
+                return;
+            } catch (error) {
+                attempts++;
+                console.error(`Redis connection attempt ${attempts} failed`, error);
+                if (attempts >= maxAttempts) {
+                    throw new RedisException('Erro ao conectar com o Redis após várias tentativas:', 500, error);
+                }
+                await delay(15000); 
+            }
         }
     }
 
